@@ -112,8 +112,7 @@ export default class WorkScreen extends Component {
   };
   render() {
     const { navigation } = this.props;
-    const { latitude, longitude, coordsWithTime } = this.state;
-    console.log("coordsWithTime", coordsWithTime);
+    const { latitude, longitude } = this.state;
     return (
       <Container>
         <Button
