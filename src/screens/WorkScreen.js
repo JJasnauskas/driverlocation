@@ -1,82 +1,102 @@
 import React, { Component } from "react";
-import {
-  ImageBackground,
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity
-} from "react-native";
 import axios from "axios";
+import Button from "../components/Button";
+import Container from "../components/Container";
 
-const apiUrl = "https://farm-track.herokuapp.com/api/gps";
-// const apiUrl = "https://goramp.eu/api/gps";
-const mins = 0.05;
+const url = "https://goramp.eu/api/gps";
+const mins = 10;
 
 export default class WorkScreen extends Component {
-
-  constructor(props){
+  constructor(props) {
     super(props);
 
     this.state = {
-      ready: false,
+      ready: null,
+      error: null,
       latitude: null,
-      longitude: null ,
-      error: null
-    }
-    // this.getLocationAndPostData(apiUrl);
+      longitude: null,
+      coordsWithTime: []
+    };
   }
-  
-  componentDidMount = async () => {
-    // let geoOptions = {
-    //   enableHighAccuracy: true,
-    //   timeOut: mins * 60000,
-    //   maximumAge: 60 * 60 * 8
-    // };
-    this.timer = setInterval(()=> this.getLocationAndPostData(apiUrl), mins * 60 * 1000)
-    this.setState({ ready: false, error: null })
-    await this.getLocation();
+
+  componentDidMount = () => {
+    this.timer = setInterval(() => this.getLocation(), mins * 60 * 1000);
+    this.getLocation();
   };
 
   componentWillUnmount() {
     clearInterval(this.timer);
   }
 
-  getLocationAndPostData = async(url) => {
-    await this.getLocation();
-    await this.postDataToApi(url)
-  }
-
-  postDataToApi = async (url) => {
+  postDataToApi = async url => {
     const { navigation } = this.props;
     const number = navigation.getParam("number", "Nėra numerio");
-    const { latitude, longitude } = this.state;
+    const { latitude, longitude, coordsWithTime } = this.state;
     const data = { number, latitude, longitude };
-    try {
-      const postedData = await this.postData(
-        url,
-        data
-      );
-      console.log("success", postedData);
-    } catch (error) {
-      console.log("Ivyko klaida");
-      console.log(error);
+    const lastElement =
+      coordsWithTime.length > 0
+        ? coordsWithTime[coordsWithTime.length - 1]
+        : { status: null };
+    if (lastElement.status === "failed" && lastElement.status !== null) {
+      let tempCoords = [...coordsWithTime];
+      let tempCoord = tempCoords.pop();
+
+      try {
+        await this.postData(url, coordsWithTime[coordsWithTime.length - 1]);
+        await this.postData(url, data);
+        tempCoord.status = "successful";
+        tempCoords.push(tempCoord);
+
+        this.setState({
+          coordsWithTime: [
+            ...tempCoords,
+            { latitude, longitude, status: "successful" }
+          ]
+        });
+      } catch {
+        this.setState({ coordsWithTime });
+      }
+    } else {
+      try {
+        await this.postData(url, data);
+        this.setState({
+          coordsWithTime: [
+            ...coordsWithTime,
+            { latitude, longitude, status: "successful" }
+          ]
+        });
+      } catch {
+        this.setState({
+          coordsWithTime: [
+            ...coordsWithTime,
+            { latitude, longitude, status: "failed" }
+          ]
+        });
+      }
     }
-  }
+  };
 
   getLocation = () => {
-    console.log('getting location...')
-    return navigator.geolocation.getCurrentPosition(this.geoSucces, this.geoFailure);
-  }
+    return navigator.geolocation.getCurrentPosition(
+      this.geoSucces,
+      this.geoFailure
+    );
+  };
 
-  geoSucces = (position) => {
-    this.setState({ ready: true, latitude: position.coords.latitude, longitude: position.coords.longitude })
-  }
+  geoSucces = position => {
+    this.setState({
+      ready: true,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    });
+    this.postDataToApi(url);
+  };
 
-  geoFailure = (err) => {
+  geoFailure = err => {
     this.setState({
       error: err.message
-    })
-  }
+    });
+  };
 
   postData = (url, data) => {
     return axios
@@ -92,41 +112,17 @@ export default class WorkScreen extends Component {
   };
   render() {
     const { navigation } = this.props;
-    const { ready, error, latitude, longitude } = this.state;
-    console.log('state lat', latitude);
-    console.log('state lng', longitude);
+    const { latitude, longitude, coordsWithTime } = this.state;
+    console.log("coordsWithTime", coordsWithTime);
     return (
-      <ImageBackground
-        source={require("../assets/images/background.jpg")}
-        style={{ flex: 1 }}
-      >
-        <View style={styles.center}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("Home", { number: ''})}
-          >
-            <Text style={styles.whiteLarge}>Baigti darbą</Text>
-          </TouchableOpacity>
-        </View>
-      </ImageBackground>
+      <Container>
+        <Button
+          onPress={() => navigation.navigate("Home", { number: "" })}
+          buttonText="Baigti darbą"
+        />
+        <Button buttonText={`latitude: ${latitude}`} />
+        <Button buttonText={`longitude: ${longitude}`} />
+      </Container>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 40,
-    backgroundColor: "#5dbd5e",
-    borderRadius: 20
-  },
-  whiteLarge: {
-    color: '#fff',
-    fontSize: 20
-  }
-});
