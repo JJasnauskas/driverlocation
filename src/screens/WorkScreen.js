@@ -89,7 +89,7 @@ export default class WorkScreen extends Component {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude
     });
-    this.postDataToApi(url);
+    // this.postDataToApi(url);
   };
 
   geoFailure = err => {
@@ -119,8 +119,6 @@ export default class WorkScreen extends Component {
           onPress={() => navigation.navigate("Home", { number: "" })}
           buttonText="Baigti darbą"
         />
-        <Button buttonText={`latitude: ${latitude}`} />
-        <Button buttonText={`longitude: ${longitude}`} />
       </Container>
     );
   }
