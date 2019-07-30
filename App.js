@@ -4,7 +4,7 @@ import WorkScreen from './src/screens/WorkScreen';
 
 const MainNavigator = createSwitchNavigator({
   Home: {screen: HomeScreen},
-  Work: {screen: WorkScreen}
+  Work: {screen: WorkScreen},
 });
 
 const App = createAppContainer(MainNavigator);

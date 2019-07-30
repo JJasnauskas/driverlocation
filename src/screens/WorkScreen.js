@@ -2,7 +2,8 @@ import React, { Component } from "react";
 import axios from "axios";
 import Button from "../components/Button";
 import Container from "../components/Container";
-
+import MapContainer from "../components/MapCointainer";
+import FloatButton from "../components/FloatButton";
 // const url = "https://goramp.eu/api/gps";
 const url = "http://driverlocation.herokuapp.com/api/gps";
 const mins = 0.1;
@@ -15,8 +16,8 @@ export default class WorkScreen extends Component {
     this.state = {
       ready: null,
       error: null,
-      latitude: null,
-      longitude: null,
+      latitude: 55.931644,
+      longitude: 24.128143,
       failedCoords: [],
       loading: false
     };
@@ -33,11 +34,11 @@ export default class WorkScreen extends Component {
 
   startInterval = () => {
     this.timer = setInterval(() => this.getLocation(), mins * 60 * 1000);
-  }
+  };
 
   stopInterval = () => {
     clearInterval(this.timer);
-  }
+  };
 
   postDataToApi = async url => {
     const { navigation } = this.props;
@@ -77,10 +78,7 @@ export default class WorkScreen extends Component {
       await this.postData(url, data);
     } catch {
       this.setState({
-        failedCoords: [
-          ...failedCoords,
-          { latitude, longitude, timestamp }
-        ]
+        failedCoords: [...failedCoords, { latitude, longitude, timestamp }]
       });
     }
   };
@@ -128,7 +126,18 @@ export default class WorkScreen extends Component {
   };
   render() {
     const { navigation } = this.props;
-    const { loading } = this.state;
+    const { loading, latitude, longitude } = this.state;
+    if (latitude !== null && longitude !== null) {
+      return (
+        <MapContainer latitude={latitude} longitude={longitude}>
+          <FloatButton
+            onPress={() => this.validateInput(number)}
+            buttonText="Pradėti darbą"
+            loading={false}
+          />
+        </MapContainer>
+      );
+    }
     return (
       <Container>
         <Button
