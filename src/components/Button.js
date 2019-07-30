@@ -2,8 +2,8 @@ import React from "react";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 import Spinner from "./Spinner";
 
-const Button = ({ onPress, buttonText, loading }) => (
-  <TouchableOpacity style={styles.button} onPress={onPress} disabled={loading}>
+const Button = ({ onPress, buttonText, loading, buttonStyle }) => (
+  <TouchableOpacity style={[styles.button, buttonStyle]} onPress={onPress} disabled={loading}>
       {!loading ? (
         <Text style={styles.whiteLarge}>{buttonText}</Text>
       ) : (

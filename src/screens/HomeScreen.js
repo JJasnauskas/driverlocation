@@ -3,14 +3,13 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import Container from "../components/Container";
 import Message from "../components/Message";
-
 export default class HomeScreen extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
       number: "",
-      numberValidated: null
+      numberValidated: null,
     };
   }
 

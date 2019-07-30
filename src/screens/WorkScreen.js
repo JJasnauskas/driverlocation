@@ -1,12 +1,11 @@
 import React, { Component } from "react";
 import axios from "axios";
-import Button from "../components/Button";
 import Container from "../components/Container";
 import MapContainer from "../components/MapCointainer";
-import FloatButton from "../components/FloatButton";
+import Spinner from "../components/Spinner";
 // const url = "https://goramp.eu/api/gps";
 const url = "http://driverlocation.herokuapp.com/api/gps";
-const mins = 0.1;
+const mins = 1;
 
 export default class WorkScreen extends Component {
   constructor(props) {
@@ -16,10 +15,11 @@ export default class WorkScreen extends Component {
     this.state = {
       ready: null,
       error: null,
-      latitude: 55.931644,
-      longitude: 24.128143,
+      latitude: null,
+      longitude: null,
+      loading: null,
       failedCoords: [],
-      loading: false
+      markers: []
     };
   }
 
@@ -43,7 +43,7 @@ export default class WorkScreen extends Component {
   postDataToApi = async url => {
     const { navigation } = this.props;
     const number = navigation.getParam("number", "Nėra numerio");
-    const { latitude, longitude, failedCoords } = this.state;
+    const { latitude, longitude, failedCoords, markers } = this.state;
     const timestamp = new Date();
     const data = { number, latitude, longitude, timestamp };
     if (failedCoords.length > 0) {
@@ -54,7 +54,8 @@ export default class WorkScreen extends Component {
           this.setState({
             failedCoords: failedCoords.filter(
               filterCoord => filterCoord !== failedCoord
-            )
+            ),
+            markers: [...markers, failedCoord]
           });
         } catch {}
       });
@@ -72,10 +73,13 @@ export default class WorkScreen extends Component {
   };
 
   tryCatchPostData = async (data, latitude, longitude) => {
-    const { failedCoords } = this.state;
+    const { failedCoords, markers } = this.state;
     const timestamp = new Date();
     try {
       await this.postData(url, data);
+      this.setState({
+        markers: [...markers, data]
+      });
     } catch {
       this.setState({
         failedCoords: [...failedCoords, { latitude, longitude, timestamp }]
@@ -114,10 +118,10 @@ export default class WorkScreen extends Component {
       });
   };
 
-  finishWork = () => {
+  finishWork = async () => {
     const { navigation } = this.props;
     this.stopInterval();
-    this.getLocation();
+    await this.getLocation();
     navigation.navigate("Home", { number: "" });
   };
 
@@ -125,26 +129,22 @@ export default class WorkScreen extends Component {
     header: null
   };
   render() {
-    const { navigation } = this.props;
-    const { loading, latitude, longitude } = this.state;
+    const { loading, latitude, longitude, markers } = this.state;
     if (latitude !== null && longitude !== null) {
       return (
-        <MapContainer latitude={latitude} longitude={longitude}>
-          <FloatButton
-            onPress={() => this.validateInput(number)}
-            buttonText="Pradėti darbą"
-            loading={false}
-          />
-        </MapContainer>
+        <MapContainer
+          latitude={latitude}
+          longitude={longitude}
+          onPress={() => this.finishWork()}
+          buttonText="Baigti darbą"
+          loading={loading}
+          markers={markers}
+        />
       );
     }
     return (
       <Container>
-        <Button
-          onPress={() => this.finishWork()}
-          buttonText="Baigti darbą"
-          loading={loading}
-        />
+        <Spinner />
       </Container>
     );
   }

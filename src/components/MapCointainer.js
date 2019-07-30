@@ -1,14 +1,9 @@
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps"; // remove PROVIDER_GOOGLE import if not using Google Maps
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Animated, Text } from "react-native";
 import React from "react";
+import Button from "./Button";
 
-const markers = [
-  { latitude: 55.931644, longitude: 24.128143 },
-  { latitude: 55.936533, longitude: 24.136497 },
-  { latitude: 55.94053, longitude: 24.142511 }
-];
-
-export default ({ latitude, longitude }, props) => (
+export default ({ latitude, longitude, onPress, buttonText, loading, markers }) => (
   <View style={styles.container}>
     <MapView
       provider={PROVIDER_GOOGLE} // remove if not using Google Maps
@@ -22,17 +17,16 @@ export default ({ latitude, longitude }, props) => (
     >
       {markers.map(marker => (
         <Marker
-          key={marker.latitude+marker.longitude}
+          key={marker.latitude + marker.longitude}
           coordinate={{
             latitude: marker.latitude,
             longitude: marker.longitude
           }}
-          title={"Title"}
-          description={"Description"}
-        />
+        >
+        </Marker>
       ))}
     </MapView>
-    {props.children}
+    <Button onPress={onPress} buttonStyle={{ position: 'absolute', bottom: 50}} buttonText={buttonText} loading={loading}/>
   </View>
 );
 
@@ -47,4 +41,23 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject
   },
+  markerWrap: {
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  marker: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(130,4,150, 0.9)"
+  },
+  ring: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(130,4,150, 0.3)",
+    position: "absolute",
+    borderWidth: 1,
+    borderColor: "rgba(130,4,150, 0.5)"
+  }
 });
