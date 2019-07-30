@@ -3,76 +3,85 @@ import axios from "axios";
 import Button from "../components/Button";
 import Container from "../components/Container";
 
-const url = "https://goramp.eu/api/gps";
-const mins = 10;
+// const url = "https://goramp.eu/api/gps";
+const url = "http://driverlocation.herokuapp.com/api/gps";
+const mins = 0.1;
 
 export default class WorkScreen extends Component {
   constructor(props) {
     super(props);
 
+    this.timer = null;
     this.state = {
       ready: null,
       error: null,
       latitude: null,
       longitude: null,
-      coordsWithTime: []
+      failedCoords: [],
+      loading: false
     };
   }
 
-  componentDidMount = () => {
-    this.timer = setInterval(() => this.getLocation(), mins * 60 * 1000);
-    this.getLocation();
+  componentDidMount = async () => {
+    await this.getLocation();
+    this.startInterval();
   };
 
   componentWillUnmount() {
     clearInterval(this.timer);
   }
 
+  startInterval = () => {
+    this.timer = setInterval(() => this.getLocation(), mins * 60 * 1000);
+  }
+
+  stopInterval = () => {
+    clearInterval(this.timer);
+  }
+
   postDataToApi = async url => {
     const { navigation } = this.props;
     const number = navigation.getParam("number", "Nėra numerio");
-    const { latitude, longitude, coordsWithTime } = this.state;
-    const data = { number, latitude, longitude };
-    const lastElement =
-      coordsWithTime.length > 0
-        ? coordsWithTime[coordsWithTime.length - 1]
-        : { status: null };
-    if (lastElement.status === "failed" && lastElement.status !== null) {
-      let tempCoords = [...coordsWithTime];
-      let tempCoord = tempCoords.pop();
-
-      try {
-        await this.postData(url, coordsWithTime[coordsWithTime.length - 1]);
-        await this.postData(url, data);
-        tempCoord.status = "successful";
-        tempCoords.push(tempCoord);
-
-        this.setState({
-          coordsWithTime: [
-            ...tempCoords,
-            { latitude, longitude, status: "successful" }
-          ]
-        });
-      } catch {
-        this.setState({ coordsWithTime });
-      }
+    const { latitude, longitude, failedCoords } = this.state;
+    const timestamp = new Date();
+    const data = { number, latitude, longitude, timestamp };
+    if (failedCoords.length > 0) {
+      this.setState({ loading: true });
+      await this.asyncForEach(failedCoords, async failedCoord => {
+        try {
+          await this.postData(url, failedCoord);
+          this.setState({
+            failedCoords: failedCoords.filter(
+              filterCoord => filterCoord !== failedCoord
+            )
+          });
+        } catch {}
+      });
+      this.tryCatchPostData(data, latitude, longitude);
+      this.setState({ loading: false });
     } else {
-      try {
-        await this.postData(url, data);
-        this.setState({
-          coordsWithTime: [
-            ...coordsWithTime,
-            { latitude, longitude, status: "successful" }
-          ]
-        });
-      } catch {
-        this.setState({
-          coordsWithTime: [
-            ...coordsWithTime,
-            { latitude, longitude, status: "failed" }
-          ]
-        });
-      }
+      this.tryCatchPostData(data, latitude, longitude);
+    }
+  };
+
+  asyncForEach = async (array, callback) => {
+    for (let index = 0; index < array.length; index++) {
+      await callback(array[index], index, array);
+    }
+  };
+
+  tryCatchPostData = async (data, latitude, longitude) => {
+    const { failedCoords } = this.state;
+    const timestamp = new Date();
+    try {
+      await this.postData(url, data);
+    } catch {
+      this.setState({
+        failedCoords: [
+          ...failedCoords,
+          { latitude, longitude, timestamp }
+        ]
+      });
     }
   };
 
@@ -89,7 +98,7 @@ export default class WorkScreen extends Component {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude
     });
-    // this.postDataToApi(url);
+    this.postDataToApi(url);
   };
 
   geoFailure = err => {
@@ -107,17 +116,25 @@ export default class WorkScreen extends Component {
       });
   };
 
+  finishWork = () => {
+    const { navigation } = this.props;
+    this.stopInterval();
+    this.getLocation();
+    navigation.navigate("Home", { number: "" });
+  };
+
   static navigationOptions = {
     header: null
   };
   render() {
     const { navigation } = this.props;
-    const { latitude, longitude } = this.state;
+    const { loading } = this.state;
     return (
       <Container>
         <Button
-          onPress={() => navigation.navigate("Home", { number: "" })}
+          onPress={() => this.finishWork()}
           buttonText="Baigti darbą"
+          loading={loading}
         />
       </Container>
     );

@@ -50,6 +50,7 @@ export default class HomeScreen extends Component {
         <Button
           onPress={() => this.validateInput(number)}
           buttonText="Pradėti darbą"
+          loading={false}
         />
       </Container>
     );
