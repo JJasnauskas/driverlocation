@@ -20,7 +20,7 @@ export default class HomeScreen extends Component {
   validateInput = input => {
     const { number } = this.state;
     const { navigation } = this.props;
-    if (input.length <= 5 ){
+    if (input.length <= 1 ){
       this.setState({
         numberValidated: false
       })
